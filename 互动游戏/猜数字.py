@@ -1,4 +1,4 @@
-from 测试 import a
+from 猜数字的引用 import a
 temp = input("不妨猜一下数字")
 guess = int(temp)
 

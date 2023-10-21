@@ -1,4 +1,3 @@
-
 import turtle
 
 pen = turtle.Pen()
@@ -34,10 +33,10 @@ pen.circle(50)
 pen.penup()  # Lift the pen
 pen.forward(160)  # Move the pen to a specified coordinate
 pen.pendown()  # Put down the pen
-pen.write('°×ÑÒËÉ', align='center', font=('ËÎÌå', '20'))  
+pen.write('mememe', align='center', font=('youyouyou', '20'))  
 pen.penup()  # Lift the pen
 pen.forward(150)  # Move the pen to a specified coordinate
 pen.pendown()  # Put down the pen
-pen.write('222', align='center', font=('ËÎÌå', '20'))
+pen.write('222', align='center', font=('666', '20'))
 
 turtle.done()
