@@ -1,0 +1,297 @@
+// ==UserScript==
+// @name         小小题库
+// @namespace    agn
+// @version      1.0
+// @description  在选中文本后打开一个小页面显示选中的文字和题库索引，点击页面其他区域关闭小页面
+// @match        *://*/*
+// @grant        GM_addStyle
+// ==/UserScript==
+
+(function() {
+  'use strict';
+
+  var popupContainer = null;
+  var permanentContainer = null;
+  var isDraggable = false;
+  var selectedText = '';
+
+  // 题库数据
+  var questionBank = [
+    { question: '马斯洛的人类需求理论将人的需求分为五个层次，其中安全需求处于哪个层次？（  ）', answer: '第二层次' },
+{ question: '据英国学者考证，“国家安全”这个词最早出现在（   ）一书中。', answer: '《美国外交政策》' },  { question: '马斯洛的人类需求理论将人的需求分为五个层次，其中安全需求处于哪个层次？（  ）', answer: '第二层次' },
+  { question: '据英国学者考证，“国家安全”这个词最早出现在（   ）一书中。', answer: '《美国外交政策》' },
+  { question: '帕德佛及林孔认为，国家安全有三种意义，以下哪一种不包含在其中？（   ）', answer: '维护网络空间主权' },
+  { question: '在奴隶社会，奴隶制国家实现安全的重要手段是（   ）。',
+    answer: '军事' },
+  { question: '在第二次世界大战以前，国家安全关注的仍然是以（    ）为主的层面。',
+    answer: '国防和军事' },
+  { question: '国家利益的概念最早是在什么时候出现的？', answer: '欧洲民族国家形成之后' },
+  { question: '在制定国家安全战略的时候，首先必须做出清醒判断的是（   ）。',
+    answer: '自己的国家利益' },
+  { question: '课程中讲的安全，就是（  ）综合，是对威胁的认知与反应，以及对权利或安全的自信；含有稳固、确定、平安与无惧的意涵。',
+    answer: '感觉; 状态; 能力; 方法' },
+  { question: '《国家安全法》第二条将国家安全定义为：国家安全是指国家政权、主权、统一和（    ）和国家其他重大利益相对处于没有危险和不受内外威胁的状态，以及保障持续安全状态的能力。',
+    answer: '领土完整; 人民福祉; 经济社会可持续发展' },
+  { question: '从上世纪九十年代开始，国际社会已经将国家安全扩展为综合性安全，以下是对其内涵的介绍，正确的是（   ）。',
+    answer: '国家安全的层次往下延伸至个人，叫个体安全；往上延伸至国际体系，叫国际安全。' },
+  { question: '国家安全领域从军事方面延伸到经济、题目:社会、题目:环境、题目:文化等非传统安全领域。',
+    answer: '国家安全领域从军事方面延伸到经济、题目:社会、题目:环境、题目:文化等非传统安全领域。' },
+  { question: '国家安全的政治责任向下降到区域、题目:地方政府、题目:甚至个人，向上涉及到国际制度。',
+    answer: '国家安全的政治责任向下降到区域、题目:地方政府、题目:甚至个人，向上涉及到国际制度。' },
+  { question: '国家安全的政治责任横向延伸到非政府组织、题目:新闻界、题目:甚至到自然界。',
+    answer: '国家安全的政治责任横向延伸到非政府组织、题目:新闻界、题目:甚至到自然界。' },
+  { question: '现代的国家安全除了要使用军事手段，还必须运用（   ）力量，使国家免于受到他国或个人的侵犯和威胁。',
+    answer: '政治; 经济; 外交' },
+  { question: '一般认为，国家利益是保障国家（   ）的全部物质条件和精神条件的综合。',
+    answer: '生存; 发展; 安全' },
+  { question: '国家安全按利益主体划分，可分为（   ）。',
+    answer: '共同利益; 冲突利益; 交叉利益' },
+  { question: '以下对国家利益的理解正确的是（   ）。',
+    answer: '不同国家对自己的国家利益有不同的认定; 同一个国家在不同的历史时期对自己国家利益，也有不同的认定; 同一个国家在同一时期，不同阶层、题目:社会集团对国家利益的认定也不尽相同; 国家利益是国家安全战略的根本依据，是制定安全战略目标的根本出发点和归宿' },
+  { question: '准确把握国家利益主要取决于以下哪些因素？（   ）',
+    answer: '国家决策机制的民主化和科学化程度; 领导人的综合素质和战略眼光; 民族的战略思维传统' },
+  { question: '国家安全，从广义上来说，就是国家运用军事力量，捍卫领土主权，保障人民幸福，消除外来威胁，防止敌人袭击的能力。 （   ）',
+    answer: '错误' },
+  { question: '请分析中美对于国家核心利益的认定分别是什么？ 尝试分析二者的差异及其原因。',
+    answer: '根据分析是否有道理给分。' },
+  { question: '系统论作为一门科学，公认是由（   ）创立的？',
+    answer: '贝塔朗菲' },
+  { question: '人体系统在天气冷热变化时，会知道要增减衣物。这表现出系统的哪个特征？（   ）',
+    answer: '系统是一个有机体，具有适应环境变化的能力' },
+  { question: '正式提出政治系统理论的是（   ）。',
+    answer: '伊斯顿' },
+  { question: '（   ）首次提出“政治地理学”这一个概念，并认为“地理学是自然的总和，历史的基石。”',
+    answer: '德国的康德' },
+  { question: '“地缘战略”一词的提出者是（   ）。',
+    answer: '美国的葛德石' },
+  { question: '海权论、题目:陆权论、题目:空权论的代表人物分别是（   ）。',
+    answer: '马汉，麦金德，杜黑' },
+  { question: '关于“地缘战略”与“地缘政治”，以下描述正确的是（   ）。',
+    answer: '地缘战略与地缘政治在理论架构上区别不大; 地缘政治更倾向于如何通过对外扩张获取资源，达到区域支配地位' },
+  { question: '地理环境决定论认为地理环境因素会影响人类的行为，以下描述正确的是（   ）。',
+    answer: '当人类受到环境的刺激时，很容易改变他们原来的决定; 人类如果坚持贯彻他原来的决定，有时客观环境也不允许; 人类如果对于环境的评估和实际差距太大，就会召来失败; 就某一个时代而言，人类的行为很难摆脱地理因素的束缚' },
+  { question: '站在交通工具演变的基础上，研究地理空间对于国家权力影响的理论有（   ）。',
+    answer: '陆权论; 海权论; 空权论' },
+  { question: '1919年，麦金德将“枢纽地带”的概念修改为“世界岛”的“心脏地带”，并且把（   ）三大陆统称为“世界岛”。',
+    answer: '欧洲; 亚洲; 非洲' },
+  { question: '以下关于海权论、题目:陆权论、题目:空权论的描述，正确的是（   ）。',
+    answer: '改良蒸汽机发端于英国，英国又四面环海，因而发展成为海权大国; 铁路、题目:公路的大幅度发展较晚，所以陆权论比海权论提出较晚; 第一次世界大战飞机才第一次被使用于战争，所以空权论提出最晚' },
+  { question: '以下有关陆权理论的描述，正确的是。（   ）',
+    answer: '“心脏地带”学说认为，东欧是唯一能直接进入心脏地带的路上通道，控制了东欧就等于控制了心脏地带。; “心脏地带”学说认为，谁控制了心脏地带就可以控制世界。; “边缘地带”学说认为，谁控制了边缘地带就可以控制世界。'},
+
+
+
+    // Add more questions and answers as needed
+  ];
+
+  // 创建小页面
+  function createPopup() {
+    popupContainer = document.createElement('div');
+    popupContainer.id = 'popup-container';
+    popupContainer.innerHTML = `
+      <div id="selected-text" style="font-weight: bold;"></div>
+      <div id="answer"></div>
+    `;
+
+    GM_addStyle(`
+      #popup-container {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          padding: 20px;
+          background-color: #ffffff;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+          z-index: 9999;
+          cursor: move;
+      }
+    `);
+
+    popupContainer.addEventListener('mousedown', handleMouseDown);
+    popupContainer.addEventListener('mouseup', handleMouseUp);
+
+    return popupContainer;
+  }
+
+  function handleMouseDown(event) {
+    isDraggable = true;
+    var offsetX = event.clientX - popupContainer.getBoundingClientRect().left;
+    var offsetY = event.clientY - popupContainer.getBoundingClientRect().top;
+
+    document.addEventListener('mousemove', handleWindowMouseMove);
+
+    function handleWindowMouseMove(event) {
+      if (isDraggable) {
+        popupContainer.style.left = event.clientX - offsetX + 'px';
+        popupContainer.style.top = event.clientY - offsetY + 'px';
+      }
+    }
+
+    document.addEventListener('mouseup', handleWindowMouseUp);
+
+    function handleWindowMouseUp() {
+      isDraggable = false;
+      document.removeEventListener('mousemove', handleWindowMouseMove);
+      document.removeEventListener('mouseup', handleWindowMouseUp);
+    }
+  }
+
+  function handleMouseUp() {
+    isDraggable = false;
+  }
+
+  function updateSelectedText() {
+    var selection = window.getSelection();
+    selectedText = selection.toString();
+    var selectedTextElement = document.getElementById('selected-text');
+    selectedTextElement.textContent = '选中的文字: ' + selectedText;
+  }
+
+  function getAnswer(question) {
+    for (var i = 0; i < questionBank.length; i++) {
+      if (questionBank[i].question === question) {
+        return questionBank[i].answer;
+      }
+    }
+    return '答案未找到';
+  }
+
+  function calculateLevenshteinSimilarity(str1, str2) {
+    var len1 = str1.length;
+    var len2 = str2.length;
+    var matrix = [];
+
+    for (var i = 0; i <= len1; i++) {
+      matrix[i] = [i];
+    }
+
+    for (var j = 0; j <= len2; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (var i = 1; i <= len1; i++) {
+      for (var j = 1; j <= len2; j++) {
+        var cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+
+    var maxLength = Math.max(len1, len2);
+    var distance = matrix[len1][len2];
+    var similarity = (1 - distance / maxLength) * 100;
+
+    return similarity;
+  }
+
+  function getMostSimilarQuestion(selectedText) {
+    var highestSimilarity = 0;
+    var mostSimilarQuestion = '';
+
+    for (var i = 0; i < questionBank.length; i++) {
+      var similarity = calculateLevenshteinSimilarity(selectedText, questionBank[i].question);
+      if (similarity > highestSimilarity) {
+        highestSimilarity = similarity;
+        mostSimilarQuestion = questionBank[i].question;
+      }
+    }
+
+    return mostSimilarQuestion;
+  }
+
+  function showAnswer() {
+    var answerElement = document.getElementById('answer');
+    var mostSimilarQuestion = getMostSimilarQuestion(selectedText);
+    var answer = getAnswer(mostSimilarQuestion);
+    answerElement.textContent = '题库答案: ' + answer;
+  }
+
+  function createPermanentPopup() {
+    permanentContainer = document.createElement('div');
+    permanentContainer.id = 'permanent-container';
+    permanentContainer.innerHTML = `
+      <div id="permanent-selected-text" style="font-weight: bold;"></div>
+      <div id="permanent-answer"></div>
+    `;
+
+    GM_addStyle(`
+      #permanent-container {
+          position: fixed;
+          top: 20px;
+          left: 20px;
+          padding: 20px;
+          background-color: #ffffff;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+          z-index: 9999;
+          cursor: default;
+      }
+    `);
+
+    return permanentContainer;
+  }
+
+  function updatePermanentSelectedText() {
+    var permanentSelectedTextElement = document.getElementById('permanent-selected-text');
+    permanentSelectedTextElement.textContent = '选中的文字: ' + selectedText;
+  }
+
+  function updatePermanentAnswer() {
+    var permanentAnswerElement = document.getElementById('permanent-answer');
+    var mostSimilarQuestion = getMostSimilarQuestion(selectedText);
+    var answer = getAnswer(mostSimilarQuestion);
+    permanentAnswerElement.textContent = '题库答案: ' + answer;
+  }
+
+  function closePopup() {
+    if (popupContainer) {
+      document.body.removeChild(popupContainer);
+      popupContainer = null;
+      selectedText = '';
+    }
+    if (permanentContainer) {
+      document.body.removeChild(permanentContainer);
+      permanentContainer = null;
+    }
+  }
+
+  document.addEventListener('mouseup', function(event) {
+    var selection = window.getSelection();
+    if (selection.toString() !== '') {
+      selectedText = selection.toString();
+      popupContainer = createPopup();
+      document.body.appendChild(popupContainer);
+      showAnswer();
+      permanentContainer = createPermanentPopup();
+      updatePermanentSelectedText();
+      updatePermanentAnswer();
+      document.body.appendChild(permanentContainer);
+      document.addEventListener('click', handleClickOutside);
+    }
+  });
+
+  function handleClickOutside(event) {
+    if (popupContainer && !popupContainer.contains(event.target)) {
+      closePopup();
+      document.removeEventListener('click', handleClickOutside);
+    }
+  }
+
+  window.addEventListener('load', function() {
+    var welcomeMessage = document.createElement('div');
+    welcomeMessage.textContent = '作者Agn，欢迎打赏，没动力不更，题库只覆盖1-5单元，后续再说，题目错误练习作者';
+    welcomeMessage.style.position = 'fixed';
+    welcomeMessage.style.top = '100px';
+    welcomeMessage.style.left = '10px';
+    welcomeMessage.style.backgroundColor = '#ffffff';
+    welcomeMessage.style.padding = '10px';
+    welcomeMessage.style.border = '1px solid #ccc';
+    welcomeMessage.style.zIndex = '9999';
+    document.body.appendChild(welcomeMessage);
+
+    permanentContainer = createPermanentPopup();
+    document.body.appendChild(permanentContainer);
+  });
+})();
